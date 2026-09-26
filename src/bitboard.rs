@@ -5,10 +5,17 @@ pub enum Color {
 }
 
 impl Color {
+    pub const ALL: [Color; 2] = [Color::White, Color::Black];
     pub fn flip(self) -> Color {
         match self {
             Color::White => Color::Black,
             Color::Black => Color::White,
+        }
+    }
+    pub fn index(self) -> usize {
+        match self {
+            Color::White => 0,
+            Color::Black => 1,
         }
     }
 }
@@ -23,7 +30,39 @@ pub enum PieceType {
     King,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+impl PieceType {
+    pub const ALL: [PieceType; 6] = [
+        PieceType::Pawn,
+        PieceType::Knight,
+        PieceType::Bishop,
+        PieceType::Rook,
+        PieceType::Queen,
+        PieceType::King,
+    ];
+    pub fn index(self) -> usize {
+        match self {
+            PieceType::Pawn => 0,
+            PieceType::Knight => 1,
+            PieceType::Bishop => 2,
+            PieceType::Rook => 3,
+            PieceType::Queen => 4,
+            PieceType::King => 5,
+        }
+    }
+
+    pub fn piece_letter(self) -> char {
+        match self {
+            PieceType::Pawn => 'P',
+            PieceType::Knight => 'N',
+            PieceType::Bishop => 'B',
+            PieceType::Rook => 'R',
+            PieceType::Queen => 'Q',
+            PieceType::King => 'K',
+        }
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Square(pub u8);
 
 impl Square {
@@ -37,9 +76,30 @@ impl Square {
     pub fn file(self) -> u8 {
         self.0 % 8
     }
+
+    pub fn from_str(to_sq: &str) -> Result<Square, String> {
+        if to_sq.len() == 2 {
+            let bytes = to_sq.as_bytes();
+            let file;
+            let rank;
+            if matches!(bytes[0], b'a'..=b'h') {
+                file = bytes[0] - b'a';
+            } else {
+                return Err("file string out of range".into());
+            }
+            if matches!(bytes[1], b'1'..=b'8') {
+                rank = bytes[1] - b'1';
+            } else {
+                return Err("file string out of range".into());
+            }
+            Ok(Self::new(rank, file))
+        } else {
+            return Err("invalid square string".into());
+        }
+    }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Bitboard(pub u64);
 
 impl Bitboard {
@@ -75,6 +135,6 @@ impl Bitboard {
             }
             println!();
         }
-        println!("   a b c d e f g h");
+        println!("  a b c d e f g h");
     }
 }
