@@ -1,3 +1,5 @@
+use std::ops::BitOr;
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Color {
     White,
@@ -101,6 +103,13 @@ impl Square {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Bitboard(pub u64);
+
+impl BitOr for Bitboard {
+    type Output = Self;
+    fn bitor(self, rhs: Self) -> Self::Output {
+        Self(self.0 | rhs.0)
+    }
+}
 
 impl Bitboard {
     pub const EMPTY: Bitboard = Bitboard(0);
