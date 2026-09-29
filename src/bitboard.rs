@@ -1,4 +1,4 @@
-use std::ops::BitOr;
+use std::ops::{BitAnd, BitOr, Not};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Color {
@@ -22,7 +22,7 @@ impl Color {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum PieceType {
     Pawn,
     Knight,
@@ -99,10 +99,31 @@ impl Square {
             return Err("invalid square string".into());
         }
     }
+
+    pub fn to_algebraic(self) -> String {
+        let file_letter = b'a' + self.file();
+        let rank_digit = b'1' + self.rank();
+        let result = String::from_utf8(vec![file_letter, rank_digit]).unwrap();
+        result
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Bitboard(pub u64);
+
+impl BitAnd for Bitboard {
+    type Output = Self;
+    fn bitand(self, rhs: Self) -> Self::Output {
+        Self(self.0 & rhs.0)
+    }
+}
+
+impl Not for Bitboard {
+    type Output = Self;
+    fn not(self) -> Self::Output {
+        Self(!self.0)
+    }
+}
 
 impl BitOr for Bitboard {
     type Output = Self;

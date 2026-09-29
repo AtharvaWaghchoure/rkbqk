@@ -1,20 +1,26 @@
-use crate::bitboard::{Bitboard, Color, PieceType, Square};
+use crate::{
+    attack::{
+        bishop_attacks, king_attacks, knight_attacks, pawn_attacks, queen_attacks, rook_attacks,
+    },
+    bitboard::{Bitboard, Color, PieceType, Square},
+};
 
 #[derive(Debug)]
 pub struct Board {
-    pieces: [[Bitboard; 6]; 2],
-    side_to_move: Color,
-    en_passant_target: Option<Square>,
+    pub pieces: [[Bitboard; 6]; 2],
+    pub side_to_move: Color,
+    pub en_passant_target: Option<Square>,
     halfmove_clock: u8,
     fullmove_number: u16,
     /// if permitted to castle not can i castle next move.
-    white_kingside: bool,
-    white_queenside: bool,
-    black_kingside: bool,
-    black_queenside: bool,
+    pub white_kingside: bool,
+    pub white_queenside: bool,
+    pub black_kingside: bool,
+    pub black_queenside: bool,
 }
 
 impl Board {
+    /// init board
     pub fn empty() -> Board {
         Board {
             pieces: [[Bitboard::EMPTY; 6]; 2],
@@ -29,6 +35,27 @@ impl Board {
         }
     }
 
+    /// all occupied squares on board for one color
+    pub fn occupied_by(&self, color: Color) -> Bitboard {
+        // self.pieces[color.index()][PieceType::Pawn.index()]
+        //     | self.pieces[color.index()][PieceType::Knight.index()]
+        //     | self.pieces[color.index()][PieceType::Bishop.index()]
+        //     | self.pieces[color.index()][PieceType::Rook.index()]
+        //     | self.pieces[color.index()][PieceType::Queen.index()]
+        //     | self.pieces[color.index()][PieceType::King.index()]
+        PieceType::ALL
+            .iter()
+            .fold(Bitboard::EMPTY, |bitboard, piecetype| {
+                bitboard | self.pieces[color.index()][piecetype.index()]
+            })
+    }
+
+    /// all occupied squares on board
+    pub fn occupied(&self) -> Bitboard {
+        self.occupied_by(Color::White) | self.occupied_by(Color::Black)
+    }
+
+    /// parsing a letter for color and piece type
     pub fn parse_piece(piece: char) -> Option<(Color, PieceType)> {
         let color = if piece.is_ascii_lowercase() {
             Color::Black
@@ -47,6 +74,7 @@ impl Board {
         Some((color, piece_type))
     }
 
+    /// Board from fen string -> FEN Parser
     pub fn from_fen(fen: &str) -> Result<Board, String> {
         let mut board = Board::empty();
         let mut parts = fen.split_whitespace();
@@ -73,12 +101,14 @@ impl Board {
             }
         }
 
+        // side to move
         board.side_to_move = match side_to_move_field {
             "w" => Color::White,
             "b" => Color::Black,
             _ => return Err("invalid side to move".into()),
         };
 
+        // castling
         if castling_field
             .chars()
             .all(|c| matches!(c, 'K' | 'Q' | 'k' | 'q' | '-'))
@@ -91,15 +121,18 @@ impl Board {
             return Err("bad castling char".into());
         }
 
+        // en passant target
         board.en_passant_target = match en_passant_field {
             "-" => None,
             _ => Some(Square::from_str(en_passant_field)?),
         };
 
+        // halfmove clock
         board.halfmove_clock = halfmove_field
             .parse()
             .map_err(|e| format!("halfmove error: {}", e))?;
 
+        // fullmove clock
         board.fullmove_number = fullmove_field
             .parse()
             .map_err(|e| format!("fullmove error: {}", e))?;
@@ -107,10 +140,12 @@ impl Board {
         return Ok(board);
     }
 
+    // putting a piece at a square
     pub fn put(&mut self, color: Color, piece_type: PieceType, sq: Square) {
         self.pieces[color.index()][piece_type.index()].set(sq);
     }
 
+    // inverse of put i.e getting piece at a specific square
     pub fn piece_at(&self, sq: Square) -> Option<(Color, PieceType)> {
         for color in Color::ALL {
             for piece in PieceType::ALL {
@@ -122,6 +157,20 @@ impl Board {
         None
     }
 
+    pub fn is_attacked(&self, sq: Square, by: Color) -> bool {
+        let occupancy = self.occupied();
+        let enemy = self.pieces[by.index()]; // 6 bitboard of attacking side.
+        let hits = knight_attacks(sq) & enemy[PieceType::Knight.index()]
+            | king_attacks(sq) & enemy[PieceType::King.index()]
+            | bishop_attacks(sq, occupancy)
+                & (enemy[PieceType::Bishop.index()] | enemy[PieceType::Queen.index()])
+            | rook_attacks(sq, occupancy)
+                & (enemy[PieceType::Rook.index()] | enemy[PieceType::Queen.index()])
+            | pawn_attacks(by.flip(), sq) & enemy[PieceType::Pawn.index()];
+        !hits.is_empty()
+    }
+
+    // pretty obvious
     pub fn print(&self) {
         for rank in (0..8).rev() {
             print!("{}  ", rank + 1);
