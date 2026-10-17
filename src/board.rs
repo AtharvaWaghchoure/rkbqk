@@ -147,17 +147,17 @@ impl Board {
         return Ok(board);
     }
 
-    // putting a piece at a square
+    /// putting a piece at a square
     pub fn put(&mut self, color: Color, piece_type: PieceType, sq: Square) {
         self.pieces[color.index()][piece_type.index()].set(sq);
     }
 
-    // removing a piece at a square
+    /// removing a piece at a square
     pub fn remove(&mut self, color: Color, piece_type: PieceType, sq: Square) {
         self.pieces[color.index()][piece_type.index()].clear(sq);
     }
 
-    // inverse of put i.e getting piece at a specific square
+    /// inverse of put i.e getting piece at a specific square
     pub fn piece_at(&self, sq: Square) -> Option<(Color, PieceType)> {
         for color in Color::ALL {
             for piece in PieceType::ALL {
@@ -169,7 +169,7 @@ impl Board {
         None
     }
 
-    // checking if the piece at sq is attacked by the enemy
+    /// checking if the piece at sq is attacked by the enemy
     pub fn is_attacked(&self, sq: Square, by: Color) -> bool {
         let occupancy = self.occupied();
         let enemy = self.pieces[by.index()]; // 6 bitboard of attacking side.
@@ -183,11 +183,12 @@ impl Board {
         !hits.is_empty()
     }
 
+    /// position of the king
     pub fn king_square(&self, color: Color) -> Square {
         Square(self.pieces[color.index()][PieceType::King.index()].0.trailing_zeros() as u8) 
     }
 
-    // make move
+    /// make a move
     pub fn make_move(&mut self, mv: Move) -> Undo {
         let undo = Undo {
             captured: self.piece_at(mv.to),
@@ -290,6 +291,41 @@ impl Board {
             }
         }
 
+
+        // rook corners
+        let a1 = Square::new(0, 0);
+        let h1 = Square::new(0, 7);
+        let a8 = Square::new(7, 0);
+        let h8 = Square::new(7, 7);
+
+        // king squares
+        let e1 = Square::new(0, 4);
+        let e8 = Square::new(7, 4);
+
+        if mv.from == a1 || mv.to == a1 {
+            self.white_queenside = false;
+        }
+        if mv.from == h1 || mv.to == h1 {
+            self.white_kingside = false;
+        }
+
+        if mv.from == a8 || mv.to == a8 {
+            self.black_queenside = false;
+        }
+        if mv.from == h8 || mv.to == h8 {
+            self.black_kingside = false;
+        }
+
+        if mv.from == e1 {
+            self.white_kingside = false;
+            self.white_queenside = false;
+        }
+
+        if mv.from == e8 {
+            self.black_kingside = false;
+            self.black_queenside = false;
+        }
+
         if self.side_to_move == Color::Black {
             self.fullmove_number += 1;
         }
@@ -297,6 +333,8 @@ impl Board {
         undo
     }
 
+
+    /// Making a Move
     pub fn legal_moves(&mut self) -> Vec<Move> {
         let current_player = self.side_to_move;
         let mut legal = Vec::new();
@@ -310,6 +348,8 @@ impl Board {
         legal
     }
 
+
+    /// Unmaking/Undo a move
     pub fn unmake_move(&mut self, mv: Move, undo: Undo) {
         match mv.kind {
             MoveKind::Quiet => {
@@ -402,7 +442,22 @@ impl Board {
         }
     }
 
+    pub fn perft (&mut self, depth: u32) -> u64 {
+        if depth == 0 {
+            return 1
+        } else {
+            let mut count = 0;
+            for mv in self.legal_moves() {
+                let undo = self.make_move(mv);
+                count += self.perft(depth-1);
+                self.unmake_move(mv, undo);
+            }
+            count
+        }
+    }
+
     // pretty obvious
+    /// Printing the board
     pub fn print(&self) {
         for rank in (0..8).rev() {
             print!("{}  ", rank + 1);
@@ -421,5 +476,29 @@ impl Board {
         }
         println!();
         println!("   a b c d e f g h");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test] 
+    fn perft_startpos() {
+        let mut board = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
+        assert_eq!(board.perft(1), 20);
+        assert_eq!(board.perft(2), 400);
+        assert_eq!(board.perft(3), 8902);
+        assert_eq!(board.perft(4), 197281);
+    }
+
+    #[test]
+    fn perft_kiwipete() {
+        let mut board = Board::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1").unwrap();
+        assert_eq!(board.perft(1), 48);
+        assert_eq!(board.perft(2), 2039);
+        assert_eq!(board.perft(3), 97862);
+        assert_eq!(board.perft(4), 4085603);
+        assert_eq!(board.perft(5), 193690690);
     }
 }
