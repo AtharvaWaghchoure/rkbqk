@@ -183,6 +183,10 @@ impl Board {
         !hits.is_empty()
     }
 
+    pub fn king_square(&self, color: Color) -> Square {
+        Square(self.pieces[color.index()][PieceType::King.index()].0.trailing_zeros() as u8) 
+    }
+
     // make move
     pub fn make_move(&mut self, mv: Move) -> Undo {
         let undo = Undo {
@@ -291,6 +295,19 @@ impl Board {
         }
         self.side_to_move = self.side_to_move.flip();
         undo
+    }
+
+    pub fn legal_moves(&mut self) -> Vec<Move> {
+        let current_player = self.side_to_move;
+        let mut legal = Vec::new();
+        for mv in Move::generate(self) {
+            let undo = self.make_move(mv);
+            if !&self.is_attacked(self.king_square(current_player), current_player.flip()) {
+                 legal.push(mv);
+            }
+            self.unmake_move(mv, undo);
+        }
+        legal
     }
 
     pub fn unmake_move(&mut self, mv: Move, undo: Undo) {
