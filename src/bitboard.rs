@@ -155,7 +155,9 @@ impl Bitboard {
         self.0 &= self.0 - 1;
         Square(index)
     }
-
+    pub fn pop_count(&self) -> u32 {
+        self.0.count_ones()
+    }
     pub fn print(self) {
         for rank in (0..8).rev() {
             print!("{} ", rank + 1);
