@@ -474,8 +474,7 @@ impl Board {
             }
             println!()
         }
-        println!();
-        println!("   a b c d e f g h");
+        println!("   a b c d e f g h")
     }
 }
 

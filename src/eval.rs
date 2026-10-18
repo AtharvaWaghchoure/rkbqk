@@ -51,18 +51,16 @@ pub fn evaluate(board: &Board) -> i32 {
         let black_count = board.pieces[Color::Black.index()][each_piece_type.index()].pop_count();
         score += (white_count as i32 - black_count as i32) * VALUES[each_piece_type.index()];
 
-        if each_piece_type == PieceType::Knight {
-            let mut white = board.pieces[Color::White.index()][each_piece_type.index()];
-            while !white.is_empty() {
-                let sq = white.pop_lsb();
-                score += PST[each_piece_type.index()][sq.0 as usize ^ 56 as usize];
-            }
+        let mut white = board.pieces[Color::White.index()][each_piece_type.index()];
+        while !white.is_empty() {
+            let sq = white.pop_lsb();
+            score += PST[each_piece_type.index()][sq.0 as usize ^ 56 as usize];
+        }
 
-            let mut black = board.pieces[Color::Black.index()][each_piece_type.index()];
-            while !black.is_empty() {
-                let sq = black.pop_lsb();
-                score -= PST[each_piece_type.index()][sq.0 as usize];
-            }
+        let mut black = board.pieces[Color::Black.index()][each_piece_type.index()];
+        while !black.is_empty() {
+            let sq = black.pop_lsb();
+            score -= PST[each_piece_type.index()][sq.0 as usize];
         }
     }
     score

@@ -5,6 +5,8 @@ mod eval;
 mod moves;
 mod search;
 
+use std::io::{self, Write};
+
 use crate::{
     bitboard::{Bitboard, Color, Square},
     board::Board,
@@ -15,14 +17,76 @@ use crate::{
 fn main() {
     let mut board =
         Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
-    let mut b = Board::from_fen("q3k3/8/8/8/8/8/8/R3K3 w - - 0 1").unwrap();
-    let mut b1 = Board::from_fen("r3k3/8/8/8/8/8/4Q3/4K3 w - - 0 1").unwrap();
 
-    let (mv, score) = search_root_alphabeta(&mut b1, 4);
-    println!(
-        "Best move: {}{}  (score {})",
-        mv.unwrap().from.to_algebraic(),
-        mv.unwrap().to.to_algebraic(),
-        score
-    );
+    loop {
+        board.print();
+        let moves = board.legal_moves();
+        if moves.is_empty() {
+            if board.is_attacked(
+                board.king_square(board.side_to_move),
+                board.side_to_move.flip(),
+            ) {
+                println!(
+                    "{:?} checkmates {:?}, {:?} wins",
+                    board.side_to_move.flip(),
+                    board.side_to_move,
+                    board.side_to_move.flip()
+                );
+                break;
+            } else {
+                println!("Stalemate");
+                break;
+            }
+        }
+
+        if board.side_to_move == Color::White {
+            print!("your move: ");
+            io::stdout().flush().unwrap();
+            let mut line = String::new();
+            let n = io::stdin().read_line(&mut line).unwrap();
+            if n == 0 {
+                println!("bye");
+                break;
+            }
+            let input = line.trim();
+            match parse_move(input, &mut board) {
+                Some(mv) => board.make_move(mv),
+                None => {
+                    println!("illegal, retry");
+                    continue;
+                }
+            };
+        } else {
+            let mv = search_root_alphabeta(&mut board, 4).0.unwrap();
+            println!(
+                "engine plays {}{}",
+                mv.from.to_algebraic(),
+                mv.to.to_algebraic()
+            );
+            board.make_move(mv);
+        }
+    }
+
+    // let mut b = Board::from_fen("q3k3/8/8/8/8/8/8/R3K3 w - - 0 1").unwrap();
+    // let mut b1 = Board::from_fen("r3k3/8/8/8/8/8/4Q3/4K3 w - - 0 1").unwrap();
+    // let (mv, score) = search_root_alphabeta(&mut b1, 4);
+    // println!(
+    //     "Best move: {}{}  (score {})",
+    //     mv.unwrap().from.to_algebraic(),
+    //     mv.unwrap().to.to_algebraic(),
+    //     score
+    // );
+}
+
+fn parse_move(input: &str, board: &mut Board) -> Option<Move> {
+    if input.len() < 4 {
+        return None;
+    }
+    let from = Square::from_str(&input[0..2]).ok()?;
+    let to = Square::from_str(&input[2..4]).ok()?;
+
+    board
+        .legal_moves()
+        .into_iter()
+        .find(|mv| mv.from == from && mv.to == to)
 }
