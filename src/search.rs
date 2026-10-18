@@ -1,4 +1,9 @@
-use crate::{bitboard::Color, board::Board, eval::evaluate, moves::Move};
+use crate::{
+    bitboard::Color,
+    board::Board,
+    eval::{VALUES, evaluate},
+    moves::Move,
+};
 
 const MATE: i32 = 30_000;
 
@@ -57,11 +62,20 @@ pub fn alphabeta(
         return evaluate(board);
     }
 
-    let moves = board.legal_moves();
+    let mut moves = board.legal_moves();
 
     if moves.is_empty() {
         return terminal_score(board, ply);
     }
+
+    moves.sort_by_key(|mv| {
+        -(match board.piece_at(mv.to) {
+            Some((_, victim)) => {
+                VALUES[victim.index()] * 10 - VALUES[board.piece_at(mv.from).unwrap().1.index()]
+            }
+            _ => 0,
+        })
+    });
 
     let maximizing = board.side_to_move == Color::White;
     let mut best = if maximizing { i32::MIN } else { i32::MAX };

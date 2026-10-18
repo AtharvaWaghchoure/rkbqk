@@ -3,7 +3,7 @@ use crate::{
     board::Board,
 };
 
-const VALUES: [i32; 6] = [100, 320, 330, 500, 900, 0];
+pub const VALUES: [i32; 6] = [100, 320, 330, 500, 900, 0];
 
 const PST: [[i32; 64]; 6] = [
     // PAWN_PST
