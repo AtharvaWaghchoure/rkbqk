@@ -12,7 +12,7 @@ use crate::{
     board::Board,
     eval::evaluate,
     moves::Move,
-    search::{minimax, search_root_alphabeta, search_root_minimax},
+    search::{minimax, search_iterative, search_root_alphabeta, search_root_minimax},
 };
 fn main() {
     let mut board =
@@ -57,7 +57,7 @@ fn main() {
                 }
             };
         } else {
-            let mv = search_root_alphabeta(&mut board, 4).0.unwrap();
+            let mv = search_iterative(&mut board, 4).unwrap().0;
             println!(
                 "engine plays {}{}",
                 mv.from.to_algebraic(),

@@ -97,6 +97,20 @@ pub fn alphabeta(
     best
 }
 
+pub fn search_iterative(board: &mut Board, max_depth: u32) -> Option<(Move, i32)> {
+    let mut best = None;
+    for d in 1..=max_depth {
+        let (mv, score, nodes) = search_root_alphabeta(board, d);
+        best = Some((mv.unwrap(), score));
+        println!(
+            "depth: {d} {}{} score {score} nodes {nodes}",
+            mv.unwrap().from.to_algebraic(),
+            mv.unwrap().to.to_algebraic()
+        );
+    }
+    best
+}
+
 pub fn quiescence(board: &mut Board, mut alpha: i32, mut beta: i32, nodes: &mut u64) -> i32 {
     let mut stand_pat = evaluate(board);
     let maximizing = board.side_to_move == Color::White;
@@ -156,7 +170,7 @@ pub fn search_root_minimax(board: &mut Board, depth: u32) -> (Option<Move>, i32)
     (best_move, best_score)
 }
 
-pub fn search_root_alphabeta(board: &mut Board, depth: u32) -> (Option<Move>, i32) {
+pub fn search_root_alphabeta(board: &mut Board, depth: u32) -> (Option<Move>, i32, u64) {
     let mut best_move: Option<Move> = None;
     let maximizing = board.side_to_move == Color::White;
     let mut best_score = if maximizing { i32::MIN } else { i32::MAX };
@@ -176,5 +190,5 @@ pub fn search_root_alphabeta(board: &mut Board, depth: u32) -> (Option<Move>, i3
             best_move = Some(mv);
         }
     }
-    (best_move, best_score)
+    (best_move, best_score, nodes)
 }
