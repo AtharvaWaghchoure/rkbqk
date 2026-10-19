@@ -59,7 +59,7 @@ pub fn alphabeta(
 ) -> i32 {
     *nodes += 1;
     if depth == 0 {
-        return evaluate(board);
+        return quiescence(board, alpha, beta, nodes);
     }
 
     let mut moves = board.legal_moves();
@@ -71,7 +71,7 @@ pub fn alphabeta(
     moves.sort_by_key(|mv| {
         -(match board.piece_at(mv.to) {
             Some((_, victim)) => {
-                VALUES[victim.index()] * 10 - VALUES[board.piece_at(mv.from).unwrap().1.index()]
+                (VALUES[victim.index()] * 10) - VALUES[board.piece_at(mv.from).unwrap().1.index()]
             }
             _ => 0,
         })
@@ -97,6 +97,42 @@ pub fn alphabeta(
     best
 }
 
+pub fn quiescence(board: &mut Board, mut alpha: i32, mut beta: i32, nodes: &mut u64) -> i32 {
+    let mut stand_pat = evaluate(board);
+    let maximizing = board.side_to_move == Color::White;
+
+    if maximizing {
+        if stand_pat >= beta {
+            return stand_pat;
+        }
+        alpha = alpha.max(stand_pat);
+    } else {
+        if stand_pat <= alpha {
+            return stand_pat;
+        }
+        beta = beta.min(stand_pat);
+    }
+
+    let mut captures = board.legal_moves();
+    captures.retain(|mv| board.piece_at(mv.to).is_some());
+
+    for capture in captures {
+        let undo = board.make_move(capture);
+        let score = quiescence(board, alpha, beta, nodes);
+        if maximizing {
+            stand_pat = stand_pat.max(score);
+            alpha = alpha.max(stand_pat);
+        } else {
+            stand_pat = stand_pat.min(score);
+            beta = beta.min(stand_pat);
+        }
+        board.unmake_move(capture, undo);
+        if alpha >= beta {
+            break;
+        }
+    }
+    stand_pat
+}
 pub fn search_root_minimax(board: &mut Board, depth: u32) -> (Option<Move>, i32) {
     let mut best_move = None;
     let maximizing = board.side_to_move == Color::White;
