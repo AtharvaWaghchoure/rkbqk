@@ -44,7 +44,7 @@ const PST: [[i32; 64]; 6] = [
         30, 10, 0, 0, 10, 30, 20,
     ],
 ];
-pub fn evaluate(board: &Board) -> i32 {
+fn evaluate(board: &Board) -> i32 {
     let mut score = 0;
     for each_piece_type in PieceType::ALL {
         let white_count = board.pieces[Color::White.index()][each_piece_type.index()].pop_count();
@@ -64,4 +64,12 @@ pub fn evaluate(board: &Board) -> i32 {
         }
     }
     score
+}
+
+pub fn eval_stm(board: &Board) -> i32 {
+    if board.side_to_move == Color::White {
+        evaluate(board)
+    } else {
+        -evaluate(board)
+    }
 }

@@ -11,14 +11,12 @@ use std::io::{self, Write};
 use crate::{
     bitboard::{Bitboard, Color, Square},
     board::Board,
-    eval::evaluate,
     moves::Move,
     search::{minimax, search_iterative, search_root_alphabeta, search_root_minimax},
 };
 fn main() {
     let mut board =
         Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
-
     loop {
         board.print();
         let moves = board.legal_moves();

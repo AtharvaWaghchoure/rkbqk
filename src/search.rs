@@ -1,10 +1,11 @@
 use crate::{
     bitboard::Color,
     board::Board,
-    eval::{VALUES, evaluate},
+    eval::{VALUES, eval_stm},
     moves::Move,
 };
 
+const INF: i32 = 32_000;
 const MATE: i32 = 30_000;
 
 fn terminal_score(board: &Board, ply: u32) -> i32 {
@@ -13,11 +14,7 @@ fn terminal_score(board: &Board, ply: u32) -> i32 {
         board.side_to_move.flip(),
     );
     if in_check {
-        if board.side_to_move == Color::White {
-            -(MATE - ply as i32)
-        } else {
-            MATE - ply as i32
-        }
+        -(MATE - ply as i32)
     } else {
         return 0;
     }
@@ -25,7 +22,7 @@ fn terminal_score(board: &Board, ply: u32) -> i32 {
 pub fn minimax(board: &mut Board, depth: u32, nodes: &mut u64, ply: u32) -> i32 {
     *nodes += 1;
     if depth == 0 {
-        return evaluate(board);
+        return eval_stm(board);
     }
 
     let moves = board.legal_moves();
@@ -77,19 +74,13 @@ pub fn alphabeta(
         })
     });
 
-    let maximizing = board.side_to_move == Color::White;
-    let mut best = if maximizing { i32::MIN } else { i32::MAX };
+    let mut best = -INF;
     for mv in &moves {
         let undo = board.make_move(*mv);
-        let score = alphabeta(board, depth - 1, alpha, beta, nodes, ply + 1);
-        if maximizing {
-            best = best.max(score);
-            alpha = alpha.max(best);
-        } else {
-            best = best.min(score);
-            beta = beta.min(best);
-        };
+        let score = -alphabeta(board, depth - 1, -beta, -alpha, nodes, ply + 1);
         board.unmake_move(*mv, undo);
+        best = best.max(score);
+        alpha = alpha.max(best);
         if alpha >= beta {
             break;
         }
@@ -112,34 +103,21 @@ pub fn search_iterative(board: &mut Board, max_depth: u32) -> Option<(Move, i32)
 }
 
 pub fn quiescence(board: &mut Board, mut alpha: i32, mut beta: i32, nodes: &mut u64) -> i32 {
-    let mut stand_pat = evaluate(board);
-    let maximizing = board.side_to_move == Color::White;
+    let mut stand_pat = eval_stm(board);
 
-    if maximizing {
-        if stand_pat >= beta {
-            return stand_pat;
-        }
-        alpha = alpha.max(stand_pat);
-    } else {
-        if stand_pat <= alpha {
-            return stand_pat;
-        }
-        beta = beta.min(stand_pat);
+    if stand_pat >= beta {
+        return stand_pat;
     }
+    alpha = alpha.max(stand_pat);
 
     let mut captures = board.legal_moves();
     captures.retain(|mv| board.piece_at(mv.to).is_some());
 
     for capture in captures {
         let undo = board.make_move(capture);
-        let score = quiescence(board, alpha, beta, nodes);
-        if maximizing {
-            stand_pat = stand_pat.max(score);
-            alpha = alpha.max(stand_pat);
-        } else {
-            stand_pat = stand_pat.min(score);
-            beta = beta.min(stand_pat);
-        }
+        let score = -quiescence(board, -beta, -alpha, nodes);
+        stand_pat = stand_pat.max(score);
+        alpha = alpha.max(stand_pat);
         board.unmake_move(capture, undo);
         if alpha >= beta {
             break;
@@ -172,20 +150,13 @@ pub fn search_root_minimax(board: &mut Board, depth: u32) -> (Option<Move>, i32)
 
 pub fn search_root_alphabeta(board: &mut Board, depth: u32) -> (Option<Move>, i32, u64) {
     let mut best_move: Option<Move> = None;
-    let maximizing = board.side_to_move == Color::White;
-    let mut best_score = if maximizing { i32::MIN } else { i32::MAX };
+    let mut best_score = -INF;
     let mut nodes = 0u64;
     for mv in board.legal_moves() {
         let undo = board.make_move(mv);
-        let score = alphabeta(board, depth - 1, i32::MIN, i32::MAX, &mut nodes, 1);
+        let score = -alphabeta(board, depth - 1, -INF, INF, &mut nodes, 1);
         board.unmake_move(mv, undo);
-        let better = if maximizing {
-            score > best_score
-        } else {
-            score < best_score
-        };
-
-        if better {
+        if score > best_score {
             best_score = score;
             best_move = Some(mv);
         }
