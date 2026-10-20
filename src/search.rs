@@ -71,7 +71,11 @@ pub fn alphabeta(
         return terminal_score(board, ply);
     }
 
+    let tt_move = tt.best_move(board.hash);
     moves.sort_by_key(|mv| {
+        if Some(*mv) == tt_move {
+            return i32::MIN;
+        };
         -(match board.piece_at(mv.to) {
             Some((_, victim)) => {
                 (VALUES[victim.index()] * 10) - VALUES[board.piece_at(mv.from).unwrap().1.index()]
@@ -86,7 +90,6 @@ pub fn alphabeta(
         let undo = board.make_move(*mv);
         let score = -alphabeta(board, depth - 1, -beta, -alpha, nodes, ply + 1, tt);
         board.unmake_move(*mv, undo);
-        best = best.max(score);
         if score > best {
             best = score;
             best_move = Some(*mv);

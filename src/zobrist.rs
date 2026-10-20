@@ -61,6 +61,17 @@ impl Tt {
             best,
         })
     }
+
+    pub fn best_move(&self, hash: u64) -> Option<Move> {
+        let idx = (hash as usize) & (self.table.len() - 1);
+        let Some(e) = &self.table[idx] else {
+            return None;
+        };
+        if e.key != hash {
+            return None;
+        }
+        e.best
+    }
 }
 pub struct Zobrist {
     pub pieces: [[u64; 64]; 12], // [piece-index][square]
