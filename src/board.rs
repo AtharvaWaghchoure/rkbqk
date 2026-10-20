@@ -18,7 +18,7 @@ pub struct Board {
     pub pieces: [[Bitboard; 6]; 2],
     pub side_to_move: Color,
     pub en_passant_target: Option<Square>,
-    halfmove_clock: u8,
+    pub halfmove_clock: u8,
     fullmove_number: u16,
     /// if permitted to castle not can i castle next move.
     pub white_kingside: bool,

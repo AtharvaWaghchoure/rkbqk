@@ -17,7 +17,17 @@ use crate::{
 fn main() {
     let mut board =
         Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
+    let mut plies = 0;
     loop {
+        plies += 1;
+        if plies > 200 {
+            println!("draw (move limit)");
+            break;
+        }
+        if board.halfmove_clock >= 100 {
+            println!("draw (50-move rule)");
+            break;
+        }
         board.print();
         let moves = board.legal_moves();
         if moves.is_empty() {
@@ -38,32 +48,41 @@ fn main() {
             }
         }
 
-        if board.side_to_move == Color::White {
-            print!("your move: ");
-            io::stdout().flush().unwrap();
-            let mut line = String::new();
-            let n = io::stdin().read_line(&mut line).unwrap();
-            if n == 0 {
-                println!("bye");
-                break;
-            }
-            let input = line.trim();
-            match parse_move(input, &mut board) {
-                Some(mv) => board.make_move(mv),
-                None => {
-                    println!("illegal, retry");
-                    continue;
-                }
-            };
-        } else {
-            let mv = search_iterative(&mut board, 4).unwrap().0;
-            println!(
-                "engine plays {}{}",
-                mv.from.to_algebraic(),
-                mv.to.to_algebraic()
-            );
-            board.make_move(mv);
-        }
+        // if board.side_to_move == Color::White {
+        //     print!("your move: ");
+        //     io::stdout().flush().unwrap();
+        //     let mut line = String::new();
+        //     let n = io::stdin().read_line(&mut line).unwrap();
+        //     if n == 0 {
+        //         println!("bye");
+        //         break;
+        //     }
+        //     let input = line.trim();
+        //     match parse_move(input, &mut board) {
+        //         Some(mv) => board.make_move(mv),
+        //         None => {
+        //             println!("illegal, retry");
+        //             continue;
+        //         }
+        //     };
+        // } else {
+        //     let mv = search_iterative(&mut board, 4).unwrap().0;
+        //     println!(
+        //         "engine plays {}{}",
+        //         mv.from.to_algebraic(),
+        //         mv.to.to_algebraic()
+        //     );
+        //     board.make_move(mv);
+        // }
+
+        let mv = search_iterative(&mut board, 4).unwrap().0;
+        println!(
+            "{:?} plays {}{}",
+            board.side_to_move,
+            mv.from.to_algebraic(),
+            mv.to.to_algebraic()
+        );
+        board.make_move(mv);
     }
 
     // let mut b = Board::from_fen("6k1/5ppp/8/8/8/8/8/R6K w - - 0 1").unwrap();
