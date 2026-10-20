@@ -2,7 +2,7 @@ use crate::{
     attack::{bishop_attacks, king_attacks, knight_attacks, pawn_attacks, rook_attacks},
     bitboard::{Bitboard, Color, PieceType, Square},
     moves::{Move, MoveKind}, 
-    zobrist::{self, Zobrist},
+    zobrist::{Zobrist},
 };
 
 #[derive(Clone, Copy, Debug)]

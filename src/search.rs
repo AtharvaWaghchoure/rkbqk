@@ -3,6 +3,7 @@ use crate::{
     board::Board,
     eval::{VALUES, eval_stm},
     moves::Move,
+    zobrist::{Bound, Tt},
 };
 
 const INF: i32 = 32_000;
@@ -50,11 +51,16 @@ pub fn alphabeta(
     board: &mut Board,
     depth: u32,
     mut alpha: i32,
-    mut beta: i32,
+    beta: i32,
     nodes: &mut u64,
     ply: u32,
+    tt: &mut Tt,
 ) -> i32 {
+    let alpha_original = alpha;
     *nodes += 1;
+    if let Some(score) = tt.probe(board.hash, depth, alpha, beta) {
+        return score;
+    };
     if depth == 0 {
         return quiescence(board, alpha, beta, nodes);
     }
@@ -75,23 +81,37 @@ pub fn alphabeta(
     });
 
     let mut best = -INF;
+    let mut best_move: Option<Move> = None;
     for mv in &moves {
         let undo = board.make_move(*mv);
-        let score = -alphabeta(board, depth - 1, -beta, -alpha, nodes, ply + 1);
+        let score = -alphabeta(board, depth - 1, -beta, -alpha, nodes, ply + 1, tt);
         board.unmake_move(*mv, undo);
         best = best.max(score);
+        if score > best {
+            best = score;
+            best_move = Some(*mv);
+        }
         alpha = alpha.max(best);
         if alpha >= beta {
             break;
         }
     }
+    let bound = if best <= alpha_original {
+        Bound::Upper
+    } else if best >= beta {
+        Bound::Lower
+    } else {
+        Bound::Exact
+    };
+    tt.store(board.hash, depth, best, bound, best_move);
     best
 }
 
 pub fn search_iterative(board: &mut Board, max_depth: u32) -> Option<(Move, i32)> {
     let mut best = None;
+    let mut tt = Tt::new(1 << 20);
     for d in 1..=max_depth {
-        let (mv, score, nodes) = search_root_alphabeta(board, d);
+        let (mv, score, nodes) = search_root_alphabeta(board, d, &mut tt);
         best = Some((mv.unwrap(), score));
         println!(
             "depth: {d} {}{} score {score} nodes {nodes}",
@@ -102,7 +122,7 @@ pub fn search_iterative(board: &mut Board, max_depth: u32) -> Option<(Move, i32)
     best
 }
 
-pub fn quiescence(board: &mut Board, mut alpha: i32, mut beta: i32, nodes: &mut u64) -> i32 {
+pub fn quiescence(board: &mut Board, mut alpha: i32, beta: i32, nodes: &mut u64) -> i32 {
     let mut stand_pat = eval_stm(board);
 
     if stand_pat >= beta {
@@ -148,13 +168,17 @@ pub fn search_root_minimax(board: &mut Board, depth: u32) -> (Option<Move>, i32)
     (best_move, best_score)
 }
 
-pub fn search_root_alphabeta(board: &mut Board, depth: u32) -> (Option<Move>, i32, u64) {
+pub fn search_root_alphabeta(
+    board: &mut Board,
+    depth: u32,
+    tt: &mut Tt,
+) -> (Option<Move>, i32, u64) {
     let mut best_move: Option<Move> = None;
     let mut best_score = -INF;
     let mut nodes = 0u64;
     for mv in board.legal_moves() {
         let undo = board.make_move(mv);
-        let score = -alphabeta(board, depth - 1, -INF, INF, &mut nodes, 1);
+        let score = -alphabeta(board, depth - 1, -INF, INF, &mut nodes, 1, tt);
         board.unmake_move(mv, undo);
         if score > best_score {
             best_score = score;

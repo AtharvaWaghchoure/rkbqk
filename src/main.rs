@@ -66,14 +66,27 @@ fn main() {
         }
     }
 
-    // let mut b = Board::from_fen("q3k3/8/8/8/8/8/8/R3K3 w - - 0 1").unwrap();
-    // let mut b1 = Board::from_fen("r3k3/8/8/8/8/8/4Q3/4K3 w - - 0 1").unwrap();
-    // let (mv, score) = search_root_alphabeta(&mut b1, 4);
+    // let mut b = Board::from_fen("6k1/5ppp/8/8/8/8/8/R6K w - - 0 1").unwrap();
+    // let mut b1 = Board::from_fen("4k3/8/2p5/3p4/8/8/8/3QK3 w - - 0 1").unwrap();
+    // let Some((mv, score)) = search_iterative(&mut b, 5) else {
+    //     println!("table corrupted");
+    //     return;
+    // };
+    // let Some((mv1, score1)) = search_iterative(&mut b1, 5) else {
+    //     println!("table corrupted");
+    //     return;
+    // };
     // println!(
     //     "Best move: {}{}  (score {})",
-    //     mv.unwrap().from.to_algebraic(),
-    //     mv.unwrap().to.to_algebraic(),
+    //     mv.from.to_algebraic(),
+    //     mv.to.to_algebraic(),
     //     score
+    // );
+    // println!(
+    //     "Best move: {}{}  (score {})",
+    //     mv1.from.to_algebraic(),
+    //     mv1.to.to_algebraic(),
+    //     score1
     // );
 }
 
