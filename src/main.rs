@@ -4,6 +4,7 @@ mod board;
 mod eval;
 mod moves;
 mod search;
+mod zobrist;
 
 use std::io::{self, Write};
 
